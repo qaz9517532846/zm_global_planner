@@ -18,31 +18,70 @@ namespace zm_global_planner
     {
         initialize(name, costmap_ros);
     }
+
+    ZMGlobalPlanner::~ZMGlobalPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
+    {
+        delete dsrv_;
+    }
     
     void ZMGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
     {
+        ros::NodeHandle private_nh("~/" + name);
 
+        costmap_ros_ = costmap_ros;
+        costmap_ = costmap_ros_->getCostmap();
+        width_ = costmap_->getSizeInCellsX();
+        height_ = costmap_->getSizeInCellsY();
+        resolution_ = costmap_->getResolution();
+        mapSize_ = width_ * height_;
+        ROS_INFO("width = %d, height = %d, mapsize = %d x %d, resolution = %f", width_, height_, width_, height_, resolution_);
+
+        obsMap_ = new bool [mapSize_];
+
+        for (unsigned int iy = 0; iy < height_; iy++)
+        {
+            for (unsigned int ix = 0; ix < width_; ix++)
+            {
+                unsigned int cost = static_cast<int>(costmap_->getCost(ix, iy));
+                if(cost < obsCost_)
+                    obsMap_[iy * width_ + ix] = true;
+                else
+                    obsMap_[iy * width_ + ix] = false;
+            }
+        }
+
+        dsrv_ = new dynamic_reconfigure::Server<ZMGlobalPlannerConfig>(private_nh);
+        dynamic_reconfigure::Server<ZMGlobalPlannerConfig>::CallbackType cb = boost::bind(&ZMGlobalPlanner::reconfigureCB, this, _1, _2);
+        dsrv_->setCallback(cb);
+
+        ROS_INFO("zm global planner initialized successfully");
+        initial_ = true;
+    }
+
+    void ZMGlobalPlanner::reconfigureCB(ZMGlobalPlannerConfig &config)
+    {
+        astar_ = config.use_astart;
+        obsCost_ = config.obs_cost;
     }
     
     bool ZMGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan)
     {
-        plan.push_back(start);
-        for(int i=0; i<20; i++)
+        bool result = false;
+        if(initial_ && CheckInMap(start) && CheckInMap(goal)) 
         {
-            geometry_msgs::PoseStamped new_goal = goal;
-            tf::Quaternion goal_quat = tf::createQuaternionFromYaw(1.54);
-            
-            new_goal.pose.position.x = -2.5+(0.05*i);
-            new_goal.pose.position.y = -3.5+(0.05*i);
-            new_goal.pose.orientation.x = goal_quat.x();
-            new_goal.pose.orientation.y = goal_quat.y();
-            new_goal.pose.orientation.z = goal_quat.z();
-            new_goal.pose.orientation.w = goal_quat.w();
-            
-            plan.push_back(new_goal);
+            result = true;
         }
-            
-        plan.push_back(goal);
-        return true;
+        else ROS_INFO("zm global planner plan failed.");
+
+        return result;
+    }
+
+    bool ZMGlobalPlanner::CheckInMap(geometry_msgs::PoseStamped pos)
+    {
+        bool result = true;
+        int costX, costY;
+        costmap_->worldToMapEnforceBounds(pos.pose.position.x, pos.pose.position.y, costX, costY);
+        if(costX > width_ || costX < 0 || costY > height_ || costY < 0) return false;
+        return !obsMap_[costY * width_ + costX] ;
     }
 };
