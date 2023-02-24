@@ -14,14 +14,14 @@ namespace zm_global_planner
 
     }
     
+    ZMGlobalPlanner::~ZMGlobalPlanner()
+    {
+        delete dsrv_;
+    }
+
     ZMGlobalPlanner::ZMGlobalPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
     {
         initialize(name, costmap_ros);
-    }
-
-    ZMGlobalPlanner::~ZMGlobalPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
-    {
-        delete dsrv_;
     }
     
     void ZMGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
@@ -50,6 +50,8 @@ namespace zm_global_planner
             }
         }
 
+        dp_ = boost::shared_ptr<DijkstraPlanner>(new DijkstraPlanner(name, costmap_ros));
+
         dsrv_ = new dynamic_reconfigure::Server<ZMGlobalPlannerConfig>(private_nh);
         dynamic_reconfigure::Server<ZMGlobalPlannerConfig>::CallbackType cb = boost::bind(&ZMGlobalPlanner::reconfigureCB, this, _1, _2);
         dsrv_->setCallback(cb);
@@ -58,7 +60,7 @@ namespace zm_global_planner
         initial_ = true;
     }
 
-    void ZMGlobalPlanner::reconfigureCB(ZMGlobalPlannerConfig &config)
+    void ZMGlobalPlanner::reconfigureCB(ZMGlobalPlannerConfig &config, uint32_t level)
     {
         astar_ = config.use_astart;
         obsCost_ = config.obs_cost;

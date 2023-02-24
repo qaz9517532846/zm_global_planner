@@ -15,7 +15,7 @@
 #include <tf/transform_broadcaster.h>
 
 #include <zm_global_planner/dijkstra_planner.h>
-#include <zm_global_planner/astar_planner.h>
+//#include <zm_global_planner/astar_planner.h>
 
 #include <dynamic_reconfigure/server.h>
 #include <zm_global_planner/ZMGlobalPlannerConfig.h>
@@ -37,10 +37,11 @@ namespace zm_global_planner
         //protected:
 
         private:
-            void reconfigureCB(ZMGlobalPlannerConfig &config);
+            void reconfigureCB(ZMGlobalPlannerConfig &config, uint32_t level);
+            bool CheckInMap(geometry_msgs::PoseStamped pos);
 
             bool astar_, initial_;
-            dynamic_reconfigure::Server<PotentialFieldLocalPlannerConfig> *dsrv_;
+            dynamic_reconfigure::Server<ZMGlobalPlannerConfig> *dsrv_;
 
             costmap_2d::Costmap2DROS* costmap_ros_;
             costmap_2d::Costmap2D* costmap_;
@@ -50,11 +51,11 @@ namespace zm_global_planner
 
             float resolution_;
 
-            unsigned bool* obsMap_; // cost map; 
+            bool* obsMap_; // cost map; 
             unsigned int obsCost_;
 
             boost::shared_ptr<DijkstraPlanner> dp_;
-            boost::shared_ptr<AstarPlanner> ap_;
+            //boost::shared_ptr<AstarPlanner> ap_;
     };
 };
 
