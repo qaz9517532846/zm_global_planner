@@ -16,24 +16,25 @@
 #include <algorithm>
 
 typedef struct{
-    uint32_t mapParentIdx;
+    int parent;
+    uint8_t cost = 255;
     bool visit;
-    uint8_t cost;
-} cellInfo;
+    bool obs;
+} CELL_INFO;
 
 namespace zm_global_planner
 {
     class DijkstraPlanner
     {
         public:
-            DijkstraPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+            DijkstraPlanner(unsigned int width_, unsigned int height_, bool* obsMap_);
             ~DijkstraPlanner();
             std::vector<int> GlobalPlanner(int start, int goal);
 
         private:
-            unsigned int width_;
-            unsigned int height_;
-            unsigned int mapSize_;
+            bool CheckInMap(int x, int y);
+            int width, height, size;
+            CELL_INFO *map; // map; 
     };
 }
 
