@@ -21,13 +21,14 @@ namespace zm_global_planner
         int posX, posY;
         int currentPos = start;
         int nextPos, nextCost;
+        std::vector<int> path;
 
         memset(&map[0].visit, 0, sizeof(bool) * size);
         memset(&map[0].parent, -1, sizeof(int) * size);
 
-        map[currentPos].visit = true;
-        while(currentPos != goal)
+        while(!map[goal].visit)
         {
+            map[currentPos].visit = true;
             for(int ix = -1; ix <= 1; ix++)
             {
                 for(int iy = -1; iy <= 1; iy++)
@@ -37,18 +38,34 @@ namespace zm_global_planner
                     nextPos = posY * width + posY;
                     if(!CheckInMap(posX, posY)) continue;
                     if(map[nextPos].visit || map[nextPos].obs) continue;
-
                     nextCost = map[currentPos].cost + sqrt(ix * ix + iy * iy) * 10;
                     if(nextCost < map[nextPos].cost)
                     {
-                        map[nextPos].cost = nextCost;
+                        printf("Update\n");
                         map[nextPos].parent = currentPos;
+                        map[nextPos].cost = nextCost;
                     }
 
                     currentPos = nextPos;
                 }
             }
         }
+
+        printf("COMPLETE\n");
+
+        currentPos = goal;
+        path.push_back(currentPos);
+        while(map[currentPos].parent != start)
+        {
+            printf("idx = %d\n", currentPos);
+            path.push_back(map[currentPos].parent);
+            currentPos = map[currentPos].parent;
+        }
+
+        printf("COMPLETE 1\n");
+
+        std::reverse(path.begin(), path.end());
+        return path;
     }
 
     bool DijkstraPlanner::CheckInMap(int x, int y)

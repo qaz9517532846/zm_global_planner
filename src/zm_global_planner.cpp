@@ -43,7 +43,7 @@ namespace zm_global_planner
             for (unsigned int ix = 0; ix < width_; ix++)
             {
                 unsigned int cost = static_cast<int>(costmap_->getCost(ix, iy));
-                if(cost < obsCost_)
+                if(cost > obsCost_)
                     obsMap_[iy * width_ + ix] = true;
                 else
                     obsMap_[iy * width_ + ix] = false;
@@ -68,9 +68,21 @@ namespace zm_global_planner
     
     bool ZMGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan)
     {
+        std::vector<int> pathIdx;
+        int startIdx, goalIdx;
+        geometry_msgs::PoseStamped findPose;
         bool result = false;
+        plan.clear();
         if(initial_ && CheckInMap(start) && CheckInMap(goal)) 
         {
+            startIdx = MapPosToCostMapIdx(start);
+            goalIdx = MapPosToCostMapIdx(goal);
+            pathIdx = dp_->GlobalPlanner(startIdx, goalIdx);
+            for(int i = 0; i < pathIdx.size(); i++)
+            {
+                findPose = CostMapIdxToMapPos(pathIdx[i]);
+                plan.push_back(findPose);
+            }
             result = true;
         }
         else ROS_INFO("zm global planner plan failed.");
@@ -85,5 +97,21 @@ namespace zm_global_planner
         costmap_->worldToMapEnforceBounds(pos.pose.position.x, pos.pose.position.y, costX, costY);
         if(costX > width_ || costX < 0 || costY > height_ || costY < 0) return false;
         return !obsMap_[costY * width_ + costX] ;
+    }
+
+    int ZMGlobalPlanner::MapPosToCostMapIdx(geometry_msgs::PoseStamped pose)
+    {
+        int posIdx_x, posIdx_y;
+        costmap_->worldToMapEnforceBounds(pose.pose.position.x, pose.pose.position.y, posIdx_x, posIdx_y);
+        return posIdx_y * width_ + posIdx_x;
+    }
+
+    geometry_msgs::PoseStamped ZMGlobalPlanner::CostMapIdxToMapPos(int posIdx)
+    {
+        geometry_msgs::PoseStamped pos;
+        int posIdx_x = posIdx % width_;
+        int posIdx_y = posIdx / width_;
+        costmap_->mapToWorld(posIdx_x, posIdx_y, pos.pose.position.x, pos.pose.position.y);
+        return pos;
     }
 };

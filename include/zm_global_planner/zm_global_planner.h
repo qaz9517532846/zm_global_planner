@@ -39,6 +39,8 @@ namespace zm_global_planner
         private:
             void reconfigureCB(ZMGlobalPlannerConfig &config, uint32_t level);
             bool CheckInMap(geometry_msgs::PoseStamped pos);
+            int MapPosToCostMapIdx(geometry_msgs::PoseStamped pose);
+            geometry_msgs::PoseStamped CostMapIdxToMapPos(int posIdx);
 
             bool astar_, initial_;
             dynamic_reconfigure::Server<ZMGlobalPlannerConfig> *dsrv_;
