@@ -18,53 +18,62 @@ namespace zm_global_planner
 
     std::vector<int> DijkstraPlanner::GlobalPlanner(int start, int goal)
     {
-        int posX, posY;
-        int currentPos = start;
-        int nextPos, nextCost;
         std::vector<int> path;
+        std::priority_queue<Score, std::vector<Score>, CompareScore> open_list;
+        int current;
+        CELL_POS startPos;
+        startPos.x = start % width;
+        startPos.y = start / width;
 
         memset(&map[0].visit, 0, sizeof(bool) * size);
         memset(&map[0].parent, -1, sizeof(int) * size);
 
-        while(!map[goal].visit)
+        map[start].cost = 0;
+        open_list.push({map[start].cost, startPos});
+
+        while(!open_list.empty())
         {
-            map[currentPos].visit = true;
+            CELL_POS currentPos = open_list.top().second;
+            open_list.pop();
+
+            current = currentPos.y * width + currentPos.x;
+            if(current == goal) break;
+
+            map[current].visit = true;
+
             for(int ix = -1; ix <= 1; ix++)
             {
                 for(int iy = -1; iy <= 1; iy++)
                 {
-                    posX = currentPos % width + ix;
-                    posY = currentPos / width + iy;
-                    nextPos = posY * width + posY;
-                    if(!CheckInMap(posX, posY)) continue;
-                    if(map[nextPos].visit || map[nextPos].obs) continue;
-                    nextCost = map[currentPos].cost + sqrt(ix * ix + iy * iy) * 10;
-                    if(nextCost < map[nextPos].cost)
-                    {
-                        printf("Update\n");
-                        map[nextPos].parent = currentPos;
-                        map[nextPos].cost = nextCost;
-                    }
+                    CELL_POS calPos;
+                    calPos.x = currentPos.x + ix;
+                    calPos.y = currentPos.y + iy;
+                    int calIdx = calPos.y * width + calPos.x;
+                    if(!CheckInMap(calPos.x , calPos.y)) continue;
+                    if(map[calIdx].visit || map[calIdx].obs) continue;
 
-                    currentPos = nextPos;
+                    int calCost = map[current].cost + sqrt(ix * ix + iy * iy) * 10;
+                    if(calCost < map[calIdx].cost)
+                    {
+                        map[calIdx].cost = calCost;
+                        open_list.push({map[calIdx].cost, calPos});
+                        map[calIdx].parent = current;
+                    }
                 }
             }
         }
 
-        printf("COMPLETE\n");
-
-        currentPos = goal;
-        path.push_back(currentPos);
-        while(map[currentPos].parent != start)
+        current = goal;
+        while(current != start)
         {
-            printf("idx = %d\n", currentPos);
-            path.push_back(map[currentPos].parent);
-            currentPos = map[currentPos].parent;
+            path.emplace_back(current);
+            current = map[current].parent;
         }
 
-        printf("COMPLETE 1\n");
+        path.emplace_back(start);
+        std::reverse(path.begin(),path.end());
 
-        std::reverse(path.begin(), path.end());
+        ROS_INFO("Finished Path");
         return path;
     }
 

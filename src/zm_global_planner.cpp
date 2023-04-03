@@ -50,7 +50,10 @@ namespace zm_global_planner
             }
         }
 
-        dp_ = boost::shared_ptr<DijkstraPlanner>(new DijkstraPlanner(width_, height_, obsMap_));
+        if(astar_)
+            ap_ = boost::shared_ptr<AstarPlanner>(new AstarPlanner(width_, height_, obsMap_));
+        else
+            dp_ = boost::shared_ptr<DijkstraPlanner>(new DijkstraPlanner(width_, height_, obsMap_));
 
         dsrv_ = new dynamic_reconfigure::Server<ZMGlobalPlannerConfig>(private_nh);
         dynamic_reconfigure::Server<ZMGlobalPlannerConfig>::CallbackType cb = boost::bind(&ZMGlobalPlanner::reconfigureCB, this, _1, _2);

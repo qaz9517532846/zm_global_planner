@@ -13,14 +13,8 @@
 #include <base_local_planner/world_model.h>
 #include <base_local_planner/costmap_model.h>
 #include <tf/transform_broadcaster.h>
+#include <zm_global_planner/all_type.h>
 #include <algorithm>
-
-typedef struct{
-    int parent;
-    uint8_t cost = 255;
-    bool visit;
-    bool obs;
-} CELL_INFO;
 
 namespace zm_global_planner
 {

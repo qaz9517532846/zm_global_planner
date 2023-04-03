@@ -15,7 +15,7 @@
 #include <tf/transform_broadcaster.h>
 
 #include <zm_global_planner/dijkstra_planner.h>
-//#include <zm_global_planner/astar_planner.h>
+#include <zm_global_planner/astar_planner.h>
 
 #include <dynamic_reconfigure/server.h>
 #include <zm_global_planner/ZMGlobalPlannerConfig.h>
@@ -57,7 +57,7 @@ namespace zm_global_planner
             unsigned int obsCost_;
 
             boost::shared_ptr<DijkstraPlanner> dp_;
-            //boost::shared_ptr<AstarPlanner> ap_;
+            boost::shared_ptr<AstarPlanner> ap_;
     };
 };
 
