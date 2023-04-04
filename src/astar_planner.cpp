@@ -22,11 +22,15 @@ namespace zm_global_planner
         std::priority_queue<Score, std::vector<Score>, CompareScore> open_list;
         int current;
         CELL_POS startPos;
+        CELL_POS goalPose;
         startPos.x = start % width;
         startPos.y = start / width;
+        goalPose.x = goal % width;
+        goalPose.y = goal / width;
 
         memset(&map[0].visit, 0, sizeof(bool) * size);
         memset(&map[0].parent, -1, sizeof(int) * size);
+        memset(&map[0].cost, std::numeric_limits<int64_t>::max(), sizeof(int64_t) * size);
 
         map[start].cost = 0;
         open_list.push({map[start].cost, startPos});
@@ -55,8 +59,9 @@ namespace zm_global_planner
                     int calCost = map[current].cost + sqrt(ix * ix + iy * iy) * 10;
                     if(calCost < map[calIdx].cost)
                     {
+                        int64_t cost_h = Heuristic_function(calPos, goalPose);
                         map[calIdx].cost = calCost;
-                        open_list.push({map[calIdx].cost, calPos});
+                        open_list.push({map[calIdx].cost + cost_h, calPos});
                         map[calIdx].parent = current;
                     }
                 }
@@ -75,6 +80,13 @@ namespace zm_global_planner
 
         ROS_INFO("Finished Path");
         return path;
+    }
+
+    int64_t AstarPlanner::Heuristic_function(CELL_POS src, CELL_POS target)
+    {
+        int64_t score;
+        score = 10 * sqrt(pow(target.x - src.x, 2) + pow(target.y - src.y, 2));
+        return static_cast<int64_t>(score);
     }
 
     bool AstarPlanner::CheckInMap(int x, int y)

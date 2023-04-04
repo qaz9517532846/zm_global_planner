@@ -27,6 +27,7 @@ namespace zm_global_planner
 
         memset(&map[0].visit, 0, sizeof(bool) * size);
         memset(&map[0].parent, -1, sizeof(int) * size);
+        memset(&map[0].cost, std::numeric_limits<int64_t>::max(), sizeof(int64_t) * size);
 
         map[start].cost = 0;
         open_list.push({map[start].cost, startPos});

@@ -55,6 +55,7 @@ namespace zm_global_planner
 
             bool* obsMap_; // cost map; 
             unsigned int obsCost_;
+            std::string mapFrame_;
 
             boost::shared_ptr<DijkstraPlanner> dp_;
             boost::shared_ptr<AstarPlanner> ap_;

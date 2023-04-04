@@ -27,6 +27,7 @@ namespace zm_global_planner
 
         private:
             bool CheckInMap(int x, int y);
+            int64_t Heuristic_function(CELL_POS src, CELL_POS target);
             int width, height, size;
             CELL_INFO *map; // map; 
     };

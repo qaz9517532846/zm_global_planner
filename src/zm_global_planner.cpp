@@ -67,6 +67,7 @@ namespace zm_global_planner
     {
         astar_ = config.use_astart;
         obsCost_ = config.obs_cost;
+        mapFrame_ = config.map_frame;
     }
     
     bool ZMGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan)
@@ -112,6 +113,8 @@ namespace zm_global_planner
     geometry_msgs::PoseStamped ZMGlobalPlanner::CostMapIdxToMapPos(int posIdx)
     {
         geometry_msgs::PoseStamped pos;
+        pos.header.stamp = ros::Time::now();
+        pos.header.frame_id = mapFrame_;
         int posIdx_x = posIdx % width_;
         int posIdx_y = posIdx / width_;
         costmap_->mapToWorld(posIdx_x, posIdx_y, pos.pose.position.x, pos.pose.position.y);
