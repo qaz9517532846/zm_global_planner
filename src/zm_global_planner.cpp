@@ -1,6 +1,8 @@
 #include <zm_global_planner/zm_global_planner.h>
 #include <pluginlib/class_list_macros.h>
 
+#define OBSTACLE_COST_VALUE         (10)
+
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(zm_global_planner::ZMGlobalPlanner, nav_core::BaseGlobalPlanner)
 
@@ -28,13 +30,14 @@ namespace zm_global_planner
     {
         ros::NodeHandle private_nh("~/" + name);
 
+        plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
+
         costmap_ros_ = costmap_ros;
         costmap_ = costmap_ros_->getCostmap();
         width_ = costmap_->getSizeInCellsX();
         height_ = costmap_->getSizeInCellsY();
         resolution_ = costmap_->getResolution();
         mapSize_ = width_ * height_;
-        ROS_INFO("width = %d, height = %d, mapsize = %d x %d, resolution = %f", width_, height_, width_, height_, resolution_);
 
         obsMap_ = new bool [mapSize_];
 
@@ -42,18 +45,16 @@ namespace zm_global_planner
         {
             for (unsigned int ix = 0; ix < width_; ix++)
             {
-                unsigned int cost = static_cast<int>(costmap_->getCost(ix, iy));
-                if(cost > obsCost_)
+                int cost = static_cast<int>(costmap_->getCost(ix, iy));
+                if(cost > OBSTACLE_COST_VALUE)
                     obsMap_[iy * width_ + ix] = true;
                 else
                     obsMap_[iy * width_ + ix] = false;
             }
         }
 
-        if(astar_)
-            ap_ = boost::shared_ptr<AstarPlanner>(new AstarPlanner(width_, height_, obsMap_));
-        else
-            dp_ = boost::shared_ptr<DijkstraPlanner>(new DijkstraPlanner(width_, height_, obsMap_));
+        ap_ = boost::shared_ptr<AstarPlanner>(new AstarPlanner(width_, height_, obsMap_));
+        dp_ = boost::shared_ptr<DijkstraPlanner>(new DijkstraPlanner(width_, height_, obsMap_));
 
         dsrv_ = new dynamic_reconfigure::Server<ZMGlobalPlannerConfig>(private_nh);
         dynamic_reconfigure::Server<ZMGlobalPlannerConfig>::CallbackType cb = boost::bind(&ZMGlobalPlanner::reconfigureCB, this, _1, _2);
@@ -66,7 +67,6 @@ namespace zm_global_planner
     void ZMGlobalPlanner::reconfigureCB(ZMGlobalPlannerConfig &config, uint32_t level)
     {
         astar_ = config.use_astart;
-        obsCost_ = config.obs_cost;
         mapFrame_ = config.map_frame;
     }
     
@@ -75,18 +75,35 @@ namespace zm_global_planner
         std::vector<int> pathIdx;
         int startIdx, goalIdx;
         geometry_msgs::PoseStamped findPose;
+        nav_msgs::Path path;
         bool result = false;
         plan.clear();
         if(initial_ && CheckInMap(start) && CheckInMap(goal)) 
         {
             startIdx = MapPosToCostMapIdx(start);
             goalIdx = MapPosToCostMapIdx(goal);
-            pathIdx = dp_->GlobalPlanner(startIdx, goalIdx);
+            if(astar_) pathIdx = ap_->GlobalPlanner(startIdx, goalIdx);
+            else       pathIdx = dp_->GlobalPlanner(startIdx, goalIdx);
             for(int i = 0; i < pathIdx.size(); i++)
             {
-                findPose = CostMapIdxToMapPos(pathIdx[i]);
+                static geometry_msgs::PoseStamped lastPose;
+                double angle = 0;
+                if(i == 0) findPose = start;
+                else if(i == pathIdx.size() - 1) findPose = goal;
+                else
+                {
+                    findPose = CostMapIdxToMapPos(pathIdx[i]);
+                    angle = atan2((findPose.pose.position.y - lastPose.pose.position.y),
+                                  (findPose.pose.position.x - lastPose.pose.position.x));
+                    findPose.pose.orientation = tf::createQuaternionMsgFromYaw(angle);
+                }
+
                 plan.push_back(findPose);
+                lastPose = findPose;
             }
+
+            path = path_publisher(plan);
+            plan_pub_.publish(path);
             result = true;
         }
         else ROS_INFO("zm global planner plan failed.");
@@ -119,5 +136,14 @@ namespace zm_global_planner
         int posIdx_y = posIdx / width_;
         costmap_->mapToWorld(posIdx_x, posIdx_y, pos.pose.position.x, pos.pose.position.y);
         return pos;
+    }
+
+    nav_msgs::Path ZMGlobalPlanner::path_publisher(std::vector<geometry_msgs::PoseStamped> plan)
+    {
+        nav_msgs::Path pub_path_;
+		pub_path_.header.stamp = ros::Time::now();
+     	pub_path_.header.frame_id = mapFrame_;
+     	pub_path_.poses = plan;
+		return pub_path_;
     }
 };

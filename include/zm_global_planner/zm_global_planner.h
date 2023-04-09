@@ -8,6 +8,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_core/base_global_planner.h>
+#include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <angles/angles.h>
 #include <base_local_planner/world_model.h>
@@ -34,16 +35,16 @@ namespace zm_global_planner
             void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
             bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
 
-        //protected:
-
         private:
             void reconfigureCB(ZMGlobalPlannerConfig &config, uint32_t level);
             bool CheckInMap(geometry_msgs::PoseStamped pos);
             int MapPosToCostMapIdx(geometry_msgs::PoseStamped pose);
             geometry_msgs::PoseStamped CostMapIdxToMapPos(int posIdx);
+            nav_msgs::Path path_publisher(std::vector<geometry_msgs::PoseStamped> plan);
 
             bool astar_, initial_;
             dynamic_reconfigure::Server<ZMGlobalPlannerConfig> *dsrv_;
+            ros::Publisher plan_pub_;
 
             costmap_2d::Costmap2DROS* costmap_ros_;
             costmap_2d::Costmap2D* costmap_;
@@ -54,7 +55,6 @@ namespace zm_global_planner
             float resolution_;
 
             bool* obsMap_; // cost map; 
-            unsigned int obsCost_;
             std::string mapFrame_;
 
             boost::shared_ptr<DijkstraPlanner> dp_;

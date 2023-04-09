@@ -27,6 +27,7 @@ namespace zm_global_planner
 
         private:
             bool CheckInMap(int x, int y);
+            void reset();
             int width, height, size;
             CELL_INFO *map; // map; 
     };

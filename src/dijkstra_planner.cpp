@@ -8,7 +8,10 @@ namespace zm_global_planner
         width = width_;
         height = height_;
         map = new CELL_INFO [size];
-        memcpy(&map[0].obs, obsMap_, sizeof(bool) * size);
+        for(int i = 0; i < size; i++)
+        {
+            map[i].obs = *(obsMap_ + i);
+        }
     }
 
     DijkstraPlanner::~DijkstraPlanner()
@@ -20,14 +23,13 @@ namespace zm_global_planner
     {
         std::vector<int> path;
         std::priority_queue<Score, std::vector<Score>, CompareScore> open_list;
+        open_list = std::priority_queue<Score, std::vector<Score>, CompareScore>();
         int current;
         CELL_POS startPos;
         startPos.x = start % width;
         startPos.y = start / width;
 
-        memset(&map[0].visit, 0, sizeof(bool) * size);
-        memset(&map[0].parent, -1, sizeof(int) * size);
-        memset(&map[0].cost, std::numeric_limits<int64_t>::max(), sizeof(int64_t) * size);
+        reset();
 
         map[start].cost = 0;
         open_list.push({map[start].cost, startPos});
@@ -65,7 +67,7 @@ namespace zm_global_planner
         }
 
         current = goal;
-        while(current != start)
+        while(map[current].parent != start)
         {
             path.emplace_back(current);
             current = map[current].parent;
@@ -74,7 +76,6 @@ namespace zm_global_planner
         path.emplace_back(start);
         std::reverse(path.begin(),path.end());
 
-        ROS_INFO("Finished Path");
         return path;
     }
 
@@ -83,5 +84,15 @@ namespace zm_global_planner
         bool result = true;
         if(x > width || x < 0 || y > height || y < 0) result = false;
         return result;
+    }
+
+    void DijkstraPlanner::reset()
+    {
+        for(int i = 0; i < size; i++)
+        {
+            map[i].visit = false;
+            map[i].parent = -1;
+            map[i].cost = std::numeric_limits<int64_t>::max();
+        }
     }
 };
