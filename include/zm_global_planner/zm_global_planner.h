@@ -17,6 +17,7 @@
 
 #include <zm_global_planner/dijkstra_planner.h>
 #include <zm_global_planner/astar_planner.h>
+#include <zm_global_planner/rrtstar_planner.h>
 
 #include <dynamic_reconfigure/server.h>
 #include <zm_global_planner/ZMGlobalPlannerConfig.h>
