@@ -32,8 +32,7 @@ include_directories(
 
 add_library(zm_global_planner src/zm_global_planner.cpp
                               src/dijkstra_planner.cpp
-                              src/astar_planner.cpp
-                              src/rrtstar_planner.cpp)
+                              src/astar_planner.cpp)
 add_dependencies(zm_global_planner zm_global_planner_gencfg)
 target_link_libraries(zm_global_planner ${catkin_LIBRARIES})
 
